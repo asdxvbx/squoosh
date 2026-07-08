@@ -11,6 +11,25 @@ const Icon = (props: preact.JSX.HTMLAttributes) => (
   />
 );
 
+export const ToggleAliasingIcon = (props: preact.JSX.HTMLAttributes) => (
+  <Icon {...props}>
+    <circle
+      cx="12"
+      cy="12"
+      r="8"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    />
+  </Icon>
+);
+
+export const ToggleAliasingActiveIcon = (props: preact.JSX.HTMLAttributes) => (
+  <Icon {...props}>
+    <path d="M12 3h5v2h2v2h2v5h-2V9h-2V7h-2V5h-3V3M21 12v5h-2v2h-2v2h-5v-2h3v-2h2v-2h2v-3h2M12 21H7v-2H5v-2H3v-5h2v3h2v2h2v2h3v2M3 12V7h2V5h2V3h5v2H9v2H7v2H5v3H3" />
+  </Icon>
+);
+
 export const ToggleBackgroundIcon = (props: preact.JSX.HTMLAttributes) => (
   <Icon {...props}>
     <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm2 4v-2H3c0 1.1.9 2 2 2zM3 9h2V7H3v2zm12 12h2v-2h-2v2zm4-18H9a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 12H9V5h10v10zm-8 6h2v-2h-2v2zm-4 0h2v-2H7v2z" />
@@ -73,19 +92,36 @@ export const DownloadIcon = () => (
   </svg>
 );
 
-export const CLIIcon = () => (
-  <svg viewBox="0 0 81.3 68.8">
-    <path
-      fill="none"
-      stroke-miterlimit="15.6"
-      stroke-width="6.3"
-      d="M3.1 3.1h75v62.5h-75zm18.8 43.8l12.5-12.5-12.5-12.5m18.7 25h18.8"
-    />
-  </svg>
-);
-
 export const SwapIcon = () => (
   <svg viewBox="0 0 18 14">
     <path d="M5.5 3.6v6.8L2.1 7l3.4-3.4M7 0L0 7l7 7V0zm4 0v14l7-7-7-7z" />
+  </svg>
+);
+
+export const SaveIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <g
+      fill="none"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+    >
+      <path d="M12.501 20.93c-.866.25-1.914-.166-2.176-1.247a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.074.26 1.49 1.296 1.252 2.158M19 22v-6m3 3l-3-3l-3 3" />
+      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
+    </g>
+  </svg>
+);
+
+export const ImportIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <g
+      fill="none"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+    >
+      <path d="M12.52 20.924c-.87.262-1.93-.152-2.195-1.241a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088.264 1.502 1.323 1.242 2.192M19 16v6m3-3l-3 3l-3-3" />
+      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
+    </g>
   </svg>
 );

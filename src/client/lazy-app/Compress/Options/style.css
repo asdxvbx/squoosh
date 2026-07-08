@@ -1,6 +1,7 @@
 .options-scroller {
   --horizontal-padding: 15px;
   border-radius: var(--scroller-radius);
+  overflow: hidden;
 
   /* At smaller widths, the multi-panel handles the scrolling */
   @media (min-width: 600px) {
@@ -52,6 +53,16 @@
   composes: option-toggle;
   grid-template-columns: auto 1fr;
   gap: 1em;
+
+  border-top: 1px solid #fff4;
+
+  transition-property: background-color;
+  transition-duration: 250ms;
+}
+
+.option-reveal:focus-within,
+.option-reveal:hover {
+  background-color: #fff2;
 }
 
 .option-one-cell {
@@ -72,11 +83,11 @@
 }
 
 .text-field {
-  background: var(--white);
-  color: var(--black);
+  background-color: var(--black);
+  color: var(--white);
   font: inherit;
   border: none;
-  padding: 6px 0 6px 10px;
+  padding: 6px 6px 6px 10px;
   width: 100%;
   box-sizing: border-box;
   border-radius: 4px;
@@ -111,7 +122,37 @@
 .copy-over-button {
   composes: title-button;
 
+  /* Make the filled arrow point towards the other options element */
+  transform: rotate(var(--rotate-copyoverbutton-angle));
+
   svg {
     fill: var(--header-text-color);
+  }
+
+  &:focus {
+    outline: var(--header-text-color) solid 2px;
+    outline-offset: 0.25em;
+  }
+}
+
+.save-button,
+.import-button {
+  composes: title-button;
+
+  svg {
+    stroke: var(--header-text-color);
+  }
+
+  &:focus {
+    outline: var(--header-text-color) solid 2px;
+    outline-offset: 0.25em;
+  }
+}
+
+.button-opacity {
+  pointer-events: none;
+  cursor: not-allowed;
+  svg {
+    opacity: 0.5;
   }
 }

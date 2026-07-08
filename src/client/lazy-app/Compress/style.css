@@ -45,9 +45,11 @@
   --hot-theme-color: var(--hot-pink);
   --header-text-color: var(--white);
   --scroller-radius: var(--options-radius) var(--options-radius) 0 0;
+  --rotate-copyoverbutton-angle: 90deg; /* To point down */
 
   @media (min-width: 600px) {
     --scroller-radius: 0 var(--options-radius) var(--options-radius) 0;
+    --rotate-copyoverbutton-angle: 0deg; /* To point right (no change) */
   }
 }
 
@@ -56,9 +58,11 @@
   --hot-theme-color: var(--deep-blue);
   --header-text-color: var(--dark-text);
   --scroller-radius: var(--options-radius) var(--options-radius) 0 0;
+  --rotate-copyoverbutton-angle: -90deg; /* To point up */
 
   @media (min-width: 600px) {
     --scroller-radius: var(--options-radius) 0 0 var(--options-radius);
+    --rotate-copyoverbutton-angle: 180deg; /* To point left */
   }
 }
 
@@ -109,6 +113,13 @@
 
   & > svg {
     width: 47px;
+    overflow: visible;
+  }
+
+  &:focus .back-blob {
+    stroke: var(--deep-blue);
+    stroke-width: 5px;
+    animation: strokePulse 500ms ease forwards;
   }
 
   @media (min-width: 600px) {
@@ -117,6 +128,15 @@
     & > svg {
       width: 58px;
     }
+  }
+}
+
+@keyframes strokePulse {
+  from {
+    stroke-width: 8px;
+  }
+  to {
+    stroke-width: 5px;
   }
 }
 

@@ -3,16 +3,27 @@
 #include <emscripten/val.h>
 #include "avif/avif.h"
 
+#include <memory>
+#include <string>
+
+#define RETURN_NULL_IF(expression) \
+  do {                             \
+    if (expression)                \
+      return val::null();          \
+  } while (false)
+
 using namespace emscripten;
 
+using AvifImagePtr = std::unique_ptr<avifImage, decltype(&avifImageDestroy)>;
+using AvifEncoderPtr = std::unique_ptr<avifEncoder, decltype(&avifEncoderDestroy)>;
+
 struct AvifOptions {
-  // [0 - 63]
-  // 0 = lossless
-  // 63 = worst quality
-  int minQuantizer;
-  int maxQuantizer;
-  int minQuantizerAlpha;
-  int maxQuantizerAlpha;
+  // [0 - 100]
+  // 0 = worst quality
+  // 100 = lossless
+  int quality;
+  // As above, but -1 means 'use quality'
+  int qualityAlpha;
   // [0 - 6]
   // Creates 2^n tiles in that dimension
   int tileRowsLog2;
@@ -26,12 +37,25 @@ struct AvifOptions {
   // 2 = 4:2:2
   // 3 = 4:4:4
   int subsample;
+  // Extra chroma compression
+  bool chromaDeltaQ;
+  // 0-7
+  int sharpness;
+  // 0 = auto
+  // 1 = PSNR
+  // 2 = SSIM
+  int tune;
+  // 0-50
+  int denoiseLevel;
+  // toggles AVIF_CHROMA_DOWNSAMPLING_SHARP_YUV
+  bool enableSharpYUV;
 };
 
 thread_local const val Uint8Array = val::global("Uint8Array");
 
 val encode(std::string buffer, int width, int height, AvifOptions options) {
-  avifRWData output = AVIF_DATA_EMPTY;
+  avifResult status;  // To check the return status for avif API's
+
   int depth = 8;
   avifPixelFormat format;
   switch (options.subsample) {
@@ -49,56 +73,97 @@ val encode(std::string buffer, int width, int height, AvifOptions options) {
       break;
   }
 
-  avifImage* image = avifImageCreate(width, height, depth, format);
+  bool lossless = options.quality == AVIF_QUALITY_LOSSLESS &&
+                  (options.qualityAlpha == -1 || options.qualityAlpha == AVIF_QUALITY_LOSSLESS) &&
+                  format == AVIF_PIXEL_FORMAT_YUV444;
 
-  if (options.maxQuantizer == AVIF_QUANTIZER_LOSSLESS &&
-      options.minQuantizer == AVIF_QUANTIZER_LOSSLESS &&
-      options.minQuantizerAlpha == AVIF_QUANTIZER_LOSSLESS &&
-      options.maxQuantizerAlpha == AVIF_QUANTIZER_LOSSLESS && format == AVIF_PIXEL_FORMAT_YUV444) {
+  // Smart pointer for the input image in YUV format
+  AvifImagePtr image(avifImageCreate(width, height, depth, format), avifImageDestroy);
+  RETURN_NULL_IF(image == nullptr);
+
+  if (lossless) {
     image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY;
   } else {
-    image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT709;
+    image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;
   }
 
-  uint8_t* rgba = (uint8_t*)buffer.c_str();
+  uint8_t* rgba = reinterpret_cast<uint8_t*>(const_cast<char*>(buffer.data()));
 
   avifRGBImage srcRGB;
-  avifRGBImageSetDefaults(&srcRGB, image);
+  avifRGBImageSetDefaults(&srcRGB, image.get());
   srcRGB.pixels = rgba;
   srcRGB.rowBytes = width * 4;
-  avifImageRGBToYUV(image, &srcRGB);
+  if (options.enableSharpYUV) {
+    srcRGB.chromaDownsampling = AVIF_CHROMA_DOWNSAMPLING_SHARP_YUV;
+  }
+  status = avifImageRGBToYUV(image.get(), &srcRGB);
+  RETURN_NULL_IF(status != AVIF_RESULT_OK);
 
-  avifEncoder* encoder = avifEncoderCreate();
+  // Create a smart pointer for the encoder
+  AvifEncoderPtr encoder(avifEncoderCreate(), avifEncoderDestroy);
+  RETURN_NULL_IF(encoder == nullptr);
+
+  if (lossless) {
+    encoder->quality = AVIF_QUALITY_LOSSLESS;
+    encoder->qualityAlpha = AVIF_QUALITY_LOSSLESS;
+  } else {
+    status = avifEncoderSetCodecSpecificOption(encoder.get(), "sharpness",
+                                               std::to_string(options.sharpness).c_str());
+    RETURN_NULL_IF(status != AVIF_RESULT_OK);
+
+    // Set base quality
+    encoder->quality = options.quality;
+    // Conditionally set alpha quality
+    if (options.qualityAlpha == -1) {
+      encoder->qualityAlpha = options.quality;
+    } else {
+      encoder->qualityAlpha = options.qualityAlpha;
+    }
+
+    if (options.tune == 2 || (options.tune == 0 && options.quality >= 50)) {
+      status = avifEncoderSetCodecSpecificOption(encoder.get(), "tune", "ssim");
+      RETURN_NULL_IF(status != AVIF_RESULT_OK);
+    }
+
+    if (options.chromaDeltaQ) {
+      status = avifEncoderSetCodecSpecificOption(encoder.get(), "color:enable-chroma-deltaq", "1");
+      RETURN_NULL_IF(status != AVIF_RESULT_OK);
+    }
+
+    status = avifEncoderSetCodecSpecificOption(encoder.get(), "color:denoise-noise-level",
+                                               std::to_string(options.denoiseLevel).c_str());
+    RETURN_NULL_IF(status != AVIF_RESULT_OK);
+  }
+
   encoder->maxThreads = emscripten_num_logical_cores();
-  encoder->minQuantizer = options.minQuantizer;
-  encoder->maxQuantizer = options.maxQuantizer;
-  encoder->minQuantizerAlpha = options.minQuantizerAlpha;
-  encoder->maxQuantizerAlpha = options.maxQuantizerAlpha;
   encoder->tileRowsLog2 = options.tileRowsLog2;
   encoder->tileColsLog2 = options.tileColsLog2;
   encoder->speed = options.speed;
-  avifResult encodeResult = avifEncoderWrite(encoder, image, &output);
+
+  avifRWData output = AVIF_DATA_EMPTY;
+  avifResult encodeResult = avifEncoderWrite(encoder.get(), image.get(), &output);
   auto js_result = val::null();
   if (encodeResult == AVIF_RESULT_OK) {
     js_result = Uint8Array.new_(typed_memory_view(output.size, output.data));
   }
 
-  avifImageDestroy(image);
-  avifEncoderDestroy(encoder);
   avifRWDataFree(&output);
   return js_result;
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
   value_object<AvifOptions>("AvifOptions")
-      .field("minQuantizer", &AvifOptions::minQuantizer)
-      .field("maxQuantizer", &AvifOptions::maxQuantizer)
-      .field("minQuantizerAlpha", &AvifOptions::minQuantizerAlpha)
-      .field("maxQuantizerAlpha", &AvifOptions::maxQuantizerAlpha)
+      .field("quality", &AvifOptions::quality)
+      .field("qualityAlpha", &AvifOptions::qualityAlpha)
       .field("tileRowsLog2", &AvifOptions::tileRowsLog2)
       .field("tileColsLog2", &AvifOptions::tileColsLog2)
       .field("speed", &AvifOptions::speed)
-      .field("subsample", &AvifOptions::subsample);
+      .field("chromaDeltaQ", &AvifOptions::chromaDeltaQ)
+      .field("sharpness", &AvifOptions::sharpness)
+      .field("tune", &AvifOptions::tune)
+      .field("denoiseLevel", &AvifOptions::denoiseLevel)
+      .field("subsample", &AvifOptions::subsample)
+      .field("enableSharpYUV", &AvifOptions::enableSharpYUV);
 
   function("encode", &encode);
 }

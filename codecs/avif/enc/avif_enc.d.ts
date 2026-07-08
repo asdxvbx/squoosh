@@ -1,12 +1,21 @@
+export const enum AVIFTune {
+  auto,
+  psnr,
+  ssim,
+}
+
 export interface EncodeOptions {
-  minQuantizer: number;
-  maxQuantizer: number;
-  minQuantizerAlpha: number;
-  maxQuantizerAlpha: number;
+  quality: number;
+  qualityAlpha: number;
+  denoiseLevel: number;
   tileRowsLog2: number;
   tileColsLog2: number;
   speed: number;
   subsample: number;
+  chromaDeltaQ: boolean;
+  sharpness: number;
+  enableSharpYUV: boolean;
+  tune: AVIFTune;
 }
 
 export interface AVIFModule extends EmscriptenWasm.Module {

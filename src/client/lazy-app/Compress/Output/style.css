@@ -49,6 +49,7 @@
   align-self: center;
   padding: 9px 66px;
   position: relative;
+  gap: 6px;
 
   /* Allow clicks to fall through to the pinch zoom area */
   pointer-events: none;
@@ -68,7 +69,6 @@
   display: flex;
   position: relative;
   z-index: 100;
-  margin: 0 3px;
 }
 
 .button,
@@ -86,8 +86,7 @@
   font-size: 1.2rem;
   cursor: pointer;
 
-  &:focus {
-    /* box-shadow: 0 0 0 2px var(--hot-pink); */
+  &:focus-visible {
     box-shadow: 0 0 0 2px #fff;
     outline: none;
     z-index: 1;
@@ -96,6 +95,7 @@
 
 .button {
   color: #fff;
+  margin: 0;
 
   &:hover {
     background: rgba(50, 50, 50, 0.92);
@@ -115,7 +115,7 @@
 .last-button {
   composes: button;
   border-radius: 0 6px 6px 0;
-  border-left-width: 1px;
+  border-right-width: 1px;
 }
 
 .zoom {
@@ -160,4 +160,9 @@ input.zoom {
   & > * {
     pointer-events: auto;
   }
+}
+
+.pixelated {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
